@@ -180,6 +180,23 @@ if (contactNav) {
     });
 }
 
+// Logo click functionality - scroll to top
+const logo = document.querySelector('.logo');
+if (logo) {
+    logo.style.cursor = 'pointer';
+    logo.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Also ensure Photos section is active
+        sections.forEach(s => s.classList.remove('active'));
+        document.getElementById('photos').classList.add('active');
+        
+        // Update nav links
+        navLinks.forEach(l => l.classList.remove('active'));
+        document.querySelector('[data-section="photos"]').classList.add('active');
+    });
+}
+
 // YouTube API - Fetch Latest Videos (excluding Shorts)
 async function loadYouTubeVideos() {
     const videoGrid = document.getElementById('youtube-videos');
@@ -309,33 +326,30 @@ window.addEventListener('load', () => {
     loadYouTubeVideos();
 });
 
-// Intersection Observer for gallery animations
+// Intersection Observer for gallery animations - Pinterest style
 const observerOptions = {
     root: null,
-    rootMargin: '0px',
-    threshold: 0.1
+    rootMargin: '50px', // Start loading slightly before item enters viewport
+    threshold: 0.1 // Trigger when 10% of the item is visible
 };
 
 const galleryObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
-            // Add animate class to trigger animation
-            const galleryItems = entry.target.querySelectorAll('.gallery-item');
-            galleryItems.forEach(item => {
-                item.classList.add('animate');
-            });
+            // Add animate class to trigger animation for this specific item
+            entry.target.classList.add('animate');
             // Unobserve after animation is triggered
             galleryObserver.unobserve(entry.target);
         }
     });
 }, observerOptions);
 
-// Observe the gallery grid
+// Observe each individual gallery item
 window.addEventListener('load', () => {
-    const galleryGrid = document.querySelector('.gallery-grid');
-    if (galleryGrid) {
-        galleryObserver.observe(galleryGrid);
-    }
+    const galleryItems = document.querySelectorAll('.gallery-item');
+    galleryItems.forEach(item => {
+        galleryObserver.observe(item);
+    });
 });
 
 // Contact Form Handling
