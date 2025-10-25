@@ -8,13 +8,12 @@ Value: AIzaSyDIk63p5A5uVapllscALawpftloThhaOns
 Variable Name: YOUTUBE_CHANNEL_ID
 Value: UCkRMsLYwmLiXjeUYSJ9GXFQ
 
-Variable Name: FORMSPREE_ENDPOINT
-Value: https://formspree.io/f/xeoryawz
+Note: Formspree endpoint is now embedded in the code (Formspree endpoints are designed to be public-facing)
 
 Steps:
 1. Go to your project in Vercel
 2. Click "Settings" tab
 3. Click "Environment Variables" in the left sidebar
-4. Add all three variables above
+4. Add the two variables above
 5. Redeploy your site
 

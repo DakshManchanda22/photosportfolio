@@ -362,16 +362,21 @@ if (contactForm) {
         const formStatus = document.getElementById('form-status');
         const formData = new FormData(contactForm);
         
+        // Get Formspree endpoint - use CONFIG if available (local), otherwise use production endpoint
+        const FORMSPREE_ENDPOINT = (typeof CONFIG !== 'undefined' && CONFIG.FORMSPREE_ENDPOINT) 
+            ? CONFIG.FORMSPREE_ENDPOINT 
+            : 'https://formspree.io/f/xeoryawz';
+        
         // Disable button and show loading
         submitBtn.disabled = true;
         submitBtn.textContent = 'Sending...';
         formStatus.style.display = 'none';
         
-        console.log('Submitting form to:', CONFIG.FORMSPREE_ENDPOINT);
+        console.log('Submitting form to:', FORMSPREE_ENDPOINT);
         console.log('Form data:', Object.fromEntries(formData));
         
         try {
-            const response = await fetch(CONFIG.FORMSPREE_ENDPOINT, {
+            const response = await fetch(FORMSPREE_ENDPOINT, {
                 method: 'POST',
                 body: formData,
                 headers: {

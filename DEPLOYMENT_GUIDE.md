@@ -34,11 +34,13 @@
 **Local Development:**
 - Uses `config.js` with your API key (not in Git)
 - Direct API calls to YouTube
+- Contact form uses Formspree endpoint from config
 
 **Production (Vercel):**
 - API key stored securely in Vercel Environment Variables
 - Uses serverless function `/api/youtube` to proxy requests
 - API key NEVER exposed to the browser
+- Contact form uses embedded Formspree endpoint (Formspree endpoints are designed to be public)
 - No `config.js` needed in production
 
 ## 🔒 Security Features
