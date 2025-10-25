@@ -1,0 +1,21 @@
+# API Keys and Sensitive Data
+config.js
+.env
+.env.local
+
+# macOS
+.DS_Store
+
+# Editor directories and files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Vercel
+.vercel
+

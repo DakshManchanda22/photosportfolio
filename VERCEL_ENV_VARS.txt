@@ -1,0 +1,17 @@
+VERCEL ENVIRONMENT VARIABLES
+
+When deploying to Vercel, add these environment variables in the Vercel dashboard:
+
+Variable Name: YOUTUBE_API_KEY
+Value: AIzaSyDIk63p5A5uVapllscALawpftloThhaOns
+
+Variable Name: YOUTUBE_CHANNEL_ID
+Value: UCkRMsLYwmLiXjeUYSJ9GXFQ
+
+Steps:
+1. Go to your project in Vercel
+2. Click "Settings" tab
+3. Click "Environment Variables" in the left sidebar
+4. Add both variables above
+5. Redeploy your site
+
