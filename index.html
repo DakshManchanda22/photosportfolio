@@ -17,6 +17,12 @@
         </div>
         <div class="logo">Daksh's Diary</div>
         <div class="social-links">
+            <a href="#" id="contact-nav" aria-label="Contact">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                    <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+            </a>
             <a href="https://www.instagram.com/dakshmanchanda22/?hl=en" target="_blank" aria-label="Instagram">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
@@ -76,6 +82,28 @@
                     <div class="video-loading">Loading latest videos...</div>
                 </div>
                 <a href="https://www.youtube.com/@DakshManchanda" target="_blank" class="view-all-btn">View All Videos →</a>
+            </div>
+
+            <!-- Contact Section (within Photos page) -->
+            <div class="contact-section">
+                <h2 class="section-heading">Get In Touch</h2>
+                <p class="contact-subtitle">Have a project in mind? Let's collaborate.</p>
+                
+                <form id="contact-form" class="contact-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="text" name="name" placeholder="Your Name" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" name="email" placeholder="Your Email" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <textarea name="message" placeholder="Your Message" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">Send Message</button>
+                    <div id="form-status" class="form-status"></div>
+                </form>
             </div>
         </section>
 

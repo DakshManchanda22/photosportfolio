@@ -168,6 +168,18 @@ if (scrollArrow) {
     });
 }
 
+// Contact nav functionality
+const contactNav = document.getElementById('contact-nav');
+if (contactNav) {
+    contactNav.addEventListener('click', (e) => {
+        e.preventDefault();
+        const contactSection = document.querySelector('.contact-section');
+        if (contactSection) {
+            contactSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+}
+
 // YouTube API - Fetch Latest Videos (excluding Shorts)
 async function loadYouTubeVideos() {
     const videoGrid = document.getElementById('youtube-videos');
@@ -326,20 +338,75 @@ window.addEventListener('load', () => {
     }
 });
 
+// Contact Form Handling
+const contactForm = document.getElementById('contact-form');
+if (contactForm) {
+    contactForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const submitBtn = contactForm.querySelector('.submit-btn');
+        const formStatus = document.getElementById('form-status');
+        const formData = new FormData(contactForm);
+        
+        // Disable button and show loading
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending...';
+        formStatus.style.display = 'none';
+        
+        console.log('Submitting form to:', CONFIG.FORMSPREE_ENDPOINT);
+        console.log('Form data:', Object.fromEntries(formData));
+        
+        try {
+            const response = await fetch(CONFIG.FORMSPREE_ENDPOINT, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            console.log('Response status:', response.status);
+            const responseData = await response.json();
+            console.log('Response data:', responseData);
+            
+            if (response.ok) {
+                formStatus.className = 'form-status success';
+                formStatus.textContent = 'Message sent successfully! I\'ll get back to you soon.';
+                formStatus.style.display = 'block';
+                contactForm.reset();
+            } else {
+                throw new Error(responseData.error || 'Form submission failed');
+            }
+        } catch (error) {
+            console.error('Form submission error:', error);
+            formStatus.className = 'form-status error';
+            formStatus.textContent = 'Oops! Something went wrong. Please try again or email directly.';
+            formStatus.style.display = 'block';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Send Message';
+        }
+    });
+}
+
+// Scroll to top on page load/refresh
+if (history.scrollRestoration) {
+    history.scrollRestoration = 'manual';
+}
+
+window.addEventListener('beforeunload', () => {
+    window.scrollTo(0, 0);
+});
+
 // Add loading animation
 window.addEventListener('load', () => {
+    // Ensure page starts at top
+    window.scrollTo(0, 0);
+    
     document.body.style.opacity = '0';
     setTimeout(() => {
         document.body.style.transition = 'opacity 0.5s';
         document.body.style.opacity = '1';
     }, 100);
-    
-    // Auto-scroll to photos grid after page loads
-    setTimeout(() => {
-        const galleryGrid = document.querySelector('.gallery-grid');
-        if (galleryGrid) {
-            galleryGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }, 1500);
 });
 
