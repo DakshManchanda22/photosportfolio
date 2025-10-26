@@ -1,3 +1,37 @@
+// Dark Mode Toggle
+const themeToggle = document.getElementById('theme-toggle');
+const sunIcon = document.querySelector('.sun-icon');
+const moonIcon = document.querySelector('.moon-icon');
+
+// Check for saved theme preference or default to light mode
+const currentTheme = localStorage.getItem('theme') || 'light';
+document.documentElement.setAttribute('data-theme', currentTheme);
+
+// Update icon based on current theme
+if (currentTheme === 'dark') {
+    sunIcon.classList.remove('active');
+    moonIcon.classList.add('active');
+}
+
+// Toggle theme
+themeToggle.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    
+    // Update theme
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    
+    // Toggle icons with animation
+    if (newTheme === 'dark') {
+        sunIcon.classList.remove('active');
+        moonIcon.classList.add('active');
+    } else {
+        moonIcon.classList.remove('active');
+        sunIcon.classList.add('active');
+    }
+});
+
 // Navigation functionality
 const navLinks = document.querySelectorAll('.nav-link');
 const sections = document.querySelectorAll('.gallery-section, .content-section');
