@@ -3,6 +3,34 @@
 // Loads immediately, no animations
 // ============================================
 
+// Initialize Lenis Smooth Scroll
+let lenis;
+if (typeof Lenis !== 'undefined') {
+    lenis = new Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: 'vertical',
+        gestureOrientation: 'vertical',
+        smoothWheel: true,
+        wheelMultiplier: 1,
+        smoothTouch: false,
+        touchMultiplier: 2,
+        infinite: false,
+    });
+
+    // RAF loop for Lenis
+    function raf(time) {
+        lenis.raf(time);
+        requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+
+    // Update scroll on Lenis scroll event
+    lenis.on('scroll', ({ scroll, limit, velocity, direction, progress }) => {
+        // Optional: can add scroll-based animations here
+    });
+}
+
 // Dark Mode Toggle
 const themeToggle = document.getElementById('theme-toggle');
 const sunIcon = document.querySelector('.sun-icon');
@@ -48,6 +76,13 @@ navLinks.forEach(link => {
         // Special handling for Latest Vids link - scroll to YouTube section
         if (link.id === 'latest-vids-nav') {
             sections.forEach(s => s.classList.remove('active'));
+            // Use Lenis for smooth scroll if available
+            if (lenis) {
+                const latestVidsSection = document.querySelector('.latest-vids-section');
+                if (latestVidsSection) {
+                    lenis.scrollTo(latestVidsSection, { offset: -100, duration: 1.5 });
+                }
+            }
             document.getElementById('photos').classList.add('active');
             navLinks.forEach(l => l.classList.remove('active'));
             document.querySelector('[data-section="photos"]').classList.add('active');
@@ -284,7 +319,26 @@ window.addEventListener('beforeunload', () => {
 // ============================================
 // LAZY LOADING WITH INTERSECTION OBSERVER
 // Images load from local assets folder
+// Hero image loads first, then gallery images
 // ============================================
+
+// Priority 1: Load hero background image immediately
+function loadHeroImage() {
+    const heroSection = document.querySelector('.hero-section');
+    if (heroSection) {
+        // Hero background is loaded via CSS, but we can preload it
+        const heroBg = new Image();
+        heroBg.src = 'assets/IMG_8677.jpg';
+        heroBg.onload = () => {
+            console.log('Hero image loaded');
+        };
+    }
+}
+
+// Load hero image first
+loadHeroImage();
+
+// Priority 2: Load gallery images with lazy loading
 const images = document.querySelectorAll("img.lazy");
 
 const imageObserver = new IntersectionObserver(entries => {
@@ -322,15 +376,18 @@ const imageObserver = new IntersectionObserver(entries => {
     });
 }, { rootMargin: "200px" });
 
-images.forEach(img => {
-    // Check if image is already loaded (cached) - don't observe if already loaded
-    if (img.complete && img.naturalHeight !== 0) {
-        img.classList.remove("skeleton");
-    } else {
-        // Only observe images that haven't loaded yet
-        imageObserver.observe(img);
-    }
-});
+// Delay gallery image observation slightly to prioritize hero
+setTimeout(() => {
+    images.forEach(img => {
+        // Check if image is already loaded (cached) - don't observe if already loaded
+        if (img.complete && img.naturalHeight !== 0) {
+            img.classList.remove("skeleton");
+        } else {
+            // Only observe images that haven't loaded yet
+            imageObserver.observe(img);
+        }
+    });
+}, 100); // Small delay to let hero load first
 
 // ============================================
 // MASONRY LAYOUT BATCHING
@@ -374,7 +431,8 @@ async function loadYouTubeVideos() {
                 throw new Error('Failed to fetch videos from API');
             }
             const data = await response.json();
-            videosToShow = data.items;
+            // API returns { items: [...] } structure
+            videosToShow = data.items || [];
         } else {
             if (typeof CONFIG === 'undefined') {
                 throw new Error('CONFIG is not defined. Make sure config.js is loaded.');
@@ -425,7 +483,15 @@ async function loadYouTubeVideos() {
         }
         
         videosToShow.forEach((video, index) => {
-            const videoId = video.id;
+            // Handle both API response formats: { id: { videoId: "..." } } or { id: "..." }
+            const videoId = video.id?.videoId || video.id;
+            const videoTitle = video.snippet?.title || 'Video';
+            
+            if (!videoId) {
+                console.warn('Skipping video with no ID:', video);
+                return;
+            }
+            
             const videoItem = document.createElement('div');
             videoItem.className = 'video-item';
             videoItem.style.animationDelay = `${(index + 1) * 0.2}s`;
@@ -434,7 +500,7 @@ async function loadYouTubeVideos() {
                 <div class="video-wrapper">
                     <iframe 
                         src="https://www.youtube.com/embed/${videoId}" 
-                        title="${video.snippet.title}" 
+                        title="${videoTitle}" 
                         frameborder="0" 
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                         allowfullscreen>
