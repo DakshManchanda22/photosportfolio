@@ -328,11 +328,10 @@ main > * {
     display: block;
 }
 
-/* CSS Grid Masonry Layout - Pinterest Style */
+/* CSS Columns Masonry Layout - Pinterest Style */
 .gallery-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 16px;
+    column-count: 4;
+    column-gap: 16px;
     margin: 0 auto;
     width: 100%;
     max-width: 100%;
@@ -357,6 +356,8 @@ main > * {
     position: relative;
     overflow: hidden;
     border-radius: 16px;
+    break-inside: avoid;
+    margin-bottom: 16px;
 }
 
 /* Vertical images: 3/4 aspect ratio */
