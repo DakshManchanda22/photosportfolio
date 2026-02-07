@@ -448,13 +448,24 @@ async function loadYouTubeVideos() {
         let videosToShow;
         
         if (isProduction) {
+            console.log('Fetching YouTube videos from API...');
             const response = await fetch('/api/youtube');
+            
             if (!response.ok) {
-                throw new Error('Failed to fetch videos from API');
+                const errorData = await response.json().catch(() => ({}));
+                console.error('YouTube API Error:', response.status, errorData);
+                throw new Error(`Failed to fetch videos from API: ${response.status} - ${errorData.message || errorData.error || 'Unknown error'}`);
             }
+            
             const data = await response.json();
+            console.log('YouTube API Response:', data);
+            
             // API returns { items: [...] } structure
             videosToShow = data.items || [];
+            
+            if (videosToShow.length === 0) {
+                console.warn('No videos returned from API');
+            }
         } else {
             if (typeof CONFIG === 'undefined') {
                 throw new Error('CONFIG is not defined. Make sure config.js is loaded.');
@@ -504,10 +515,14 @@ async function loadYouTubeVideos() {
             return;
         }
         
+        console.log('Processing videos:', videosToShow.length);
+        
         videosToShow.forEach((video, index) => {
             // Handle both API response formats: { id: { videoId: "..." } } or { id: "..." }
             const videoId = video.id?.videoId || video.id;
             const videoTitle = video.snippet?.title || 'Video';
+            
+            console.log(`Processing video ${index + 1}:`, { videoId, title: videoTitle });
             
             if (!videoId) {
                 console.warn('Skipping video with no ID:', video);
@@ -531,12 +546,19 @@ async function loadYouTubeVideos() {
             `;
             
             videoGrid.appendChild(videoItem);
+            console.log(`Video ${index + 1} added to grid`);
         });
     } catch (error) {
         console.error('Error loading YouTube videos:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
         videoGrid.innerHTML = `
             <div class="video-error">
-                <p>Unable to load videos. <a href="https://www.youtube.com/@DakshManchanda" target="_blank">Visit YouTube channel →</a></p>
+                <p>Unable to load videos: ${error.message}</p>
+                <p><a href="https://www.youtube.com/@DakshManchanda" target="_blank">Visit YouTube channel →</a></p>
             </div>
         `;
     }
