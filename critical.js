@@ -99,7 +99,8 @@ let currentImageIndex = 0;
 let currentGalleryItems = []; // Array of image elements
 
 // Load full-quality signed URL for lightbox
-async function loadLightboxImage(img, useHighQuality = true) {
+// Frontend only consumes URLs from backend - no Cloudinary logic here
+async function loadLightboxImage(img) {
     if (!img.dataset.path) {
         // Fallback to current src if no path
         lightboxImg.src = img.src;
@@ -107,13 +108,9 @@ async function loadLightboxImage(img, useHighQuality = true) {
     }
 
     try {
-        // Use high quality transformations for lightbox
-        const options = useHighQuality 
-            ? 'f_auto,q_auto:best,dpr_auto' 
-            : 'f_auto,q_auto,dpr_auto';
-        
+        // Fetch signed URL from backend (backend handles all Cloudinary logic)
         const res = await fetch(
-            `/api/cloudinary-url?path=${encodeURIComponent(img.dataset.path)}&options=${options}`
+            `/api/cloudinary-url?path=${encodeURIComponent(img.dataset.path)}`
         );
         
         if (!res.ok) {
@@ -122,6 +119,7 @@ async function loadLightboxImage(img, useHighQuality = true) {
 
         const data = await res.json();
         if (data.url) {
+            // Use URL directly from backend - no modification
             lightboxImg.src = data.url;
         } else {
             // Fallback to current src
@@ -151,8 +149,8 @@ document.addEventListener('click', async (e) => {
             lightbox.style.display = 'block';
             document.body.style.overflow = 'hidden';
             
-            // Load full-quality image
-            await loadLightboxImage(img, true);
+            // Load full-quality image (backend handles quality settings)
+            await loadLightboxImage(img);
         }
     }
 });
@@ -174,13 +172,13 @@ lightbox.addEventListener('click', (e) => {
 // Previous image
 prevBtn.addEventListener('click', async () => {
     currentImageIndex = (currentImageIndex - 1 + currentGalleryItems.length) % currentGalleryItems.length;
-    await loadLightboxImage(currentGalleryItems[currentImageIndex], true);
+    await loadLightboxImage(currentGalleryItems[currentImageIndex]);
 });
 
 // Next image
 nextBtn.addEventListener('click', async () => {
     currentImageIndex = (currentImageIndex + 1) % currentGalleryItems.length;
-    await loadLightboxImage(currentGalleryItems[currentImageIndex], true);
+    await loadLightboxImage(currentGalleryItems[currentImageIndex]);
 });
 
 // Keyboard navigation
@@ -325,8 +323,8 @@ async function loadPrivateImage(img) {
     img.dataset.loading = 'true'; // Prevent duplicate requests
 
     try {
-        // Fetch signed URL from serverless function
-        const apiUrl = `/api/cloudinary-url?path=${encodeURIComponent(img.dataset.path)}&options=f_auto,q_auto,dpr_auto`;
+        // Fetch signed URL from backend (backend handles all Cloudinary logic and transformations)
+        const apiUrl = `/api/cloudinary-url?path=${encodeURIComponent(img.dataset.path)}`;
         console.log('Fetching signed URL for:', img.dataset.path);
         
         const res = await fetch(apiUrl);
@@ -521,8 +519,9 @@ async function loadHeroBackground() {
 
     try {
         const path = heroSection.dataset.heroBg;
+        // Fetch signed URL from backend (backend handles all Cloudinary logic)
         const res = await fetch(
-            `/api/cloudinary-url?path=${encodeURIComponent(path)}&options=f_auto,q_auto`
+            `/api/cloudinary-url?path=${encodeURIComponent(path)}`
         );
         
         if (!res.ok) {
