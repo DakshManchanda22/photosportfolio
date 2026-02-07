@@ -1,6 +1,9 @@
 // Vercel Serverless Function to proxy YouTube API requests
 // This keeps your API key secure on the server
 
+// Ensure Node.js runtime (required for fetch API)
+export const runtime = 'nodejs';
+
 export default async function handler(req, res) {
     // Only allow GET requests
     if (req.method !== 'GET') {
