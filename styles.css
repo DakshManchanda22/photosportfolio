@@ -319,6 +319,9 @@ main > * {
 /* Gallery Sections */
 .gallery-section {
     display: none;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .gallery-section.active {
