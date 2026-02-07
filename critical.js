@@ -88,7 +88,11 @@ navLinks.forEach(link => {
             document.querySelector('[data-section="photos"]').classList.add('active');
             const latestVidsSection = document.querySelector('.latest-vids-section');
             if (latestVidsSection) {
-                latestVidsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (lenis) {
+                    lenis.scrollTo(latestVidsSection, { offset: -100, duration: 1.5 });
+                } else {
+                    latestVidsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             }
             return;
         }
@@ -102,7 +106,11 @@ navLinks.forEach(link => {
             link.classList.add('active');
             const galleryGrid = document.querySelector('.gallery-grid');
             if (galleryGrid) {
-                galleryGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                if (lenis) {
+                    lenis.scrollTo(galleryGrid, { offset: -100, duration: 1.5 });
+                } else {
+                    galleryGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             }
             return;
         }
@@ -118,7 +126,11 @@ navLinks.forEach(link => {
         const targetSection = document.getElementById(sectionId);
         if (targetSection) {
             targetSection.classList.add('active');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (lenis) {
+                lenis.scrollTo(0, { duration: 1.5 });
+            } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
     });
 });
@@ -203,8 +215,10 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-// Smooth scroll behavior
-document.documentElement.style.scrollBehavior = 'smooth';
+// Smooth scroll behavior (only if Lenis is not available)
+if (typeof Lenis === 'undefined') {
+    document.documentElement.style.scrollBehavior = 'smooth';
+}
 
 // Disable right-click on images to prevent download
 document.addEventListener('contextmenu', (e) => {
@@ -228,7 +242,11 @@ if (scrollArrow) {
     scrollArrow.addEventListener('click', () => {
         const galleryGrid = document.querySelector('.gallery-grid');
         if (galleryGrid) {
-            galleryGrid.scrollIntoView({ behavior: 'smooth' });
+            if (lenis) {
+                lenis.scrollTo(galleryGrid, { offset: -100, duration: 1.5 });
+            } else {
+                galleryGrid.scrollIntoView({ behavior: 'smooth' });
+            }
         }
     });
 }
