@@ -1,6 +1,9 @@
 // Vercel Serverless Function to generate signed Cloudinary URLs
 // This keeps API secret secure on the server - NEVER exposed to frontend
 
+// Import cloudinary SDK at top level (server-side only)
+import cloudinary from 'cloudinary';
+
 export default async function handler(req, res) {
     // Only allow GET requests
     if (req.method !== 'GET') {
@@ -24,11 +27,8 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Import cloudinary SDK (server-side only, ES module)
-        const cloudinary = (await import('cloudinary')).default.v2;
-        
         // Configure Cloudinary
-        cloudinary.config({
+        cloudinary.v2.config({
             cloud_name: CLOUD_NAME,
             api_key: API_KEY,
             api_secret: API_SECRET
@@ -38,7 +38,7 @@ export default async function handler(req, res) {
         const transformations = options.split(',').map(opt => opt.trim());
 
         // Generate signed URL for authenticated/restricted image
-        const url = cloudinary.url(path, {
+        const url = cloudinary.v2.url(path, {
             type: 'authenticated',
             sign_url: true,
             secure: true,
