@@ -210,7 +210,7 @@ main > * {
     overflow: hidden;
 }
 
-/* Background image */
+/* Background image - loaded via JavaScript with signed URL */
 .hero-section::before {
     content: '';
     position: absolute;
@@ -218,7 +218,6 @@ main > * {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url('assets/IMG_8677.jpg');
     background-size: cover;
     background-position: center 68%;    
     background-repeat: no-repeat;
@@ -380,6 +379,41 @@ main > * {
     -khtml-user-drag: none;
     -moz-user-drag: none;
     -o-user-drag: none;
+}
+
+/* Image aspect ratio and layout shift prevention */
+.image {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 3;
+    object-fit: cover;
+}
+
+/* Skeleton loader - Pinterest style */
+.skeleton {
+    background: linear-gradient(
+        90deg,
+        #eee 25%,
+        #f5f5f5 37%,
+        #eee 63%
+    );
+    background-size: 400% 100%;
+    animation: shimmer 1.4s infinite;
+}
+
+[data-theme="dark"] .skeleton {
+    background: linear-gradient(
+        90deg,
+        #2a2a2a 25%,
+        #333333 37%,
+        #2a2a2a 63%
+    );
+    background-size: 400% 100%;
+}
+
+@keyframes shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
 }
 
 .gallery-item:hover img {

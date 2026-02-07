@@ -1,0 +1,16 @@
+{
+  "name": "photosportfolio",
+  "version": "1.0.0",
+  "description": "Photography portfolio with secure Cloudinary image hosting",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "cloudinary": "^1.41.0"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.x"
+  }
+}
+
