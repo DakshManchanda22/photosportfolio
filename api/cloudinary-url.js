@@ -1,5 +1,8 @@
 // Vercel Serverless Function to generate signed Cloudinary URLs
 // This keeps API secret secure on the server - NEVER exposed to frontend
+// Uses manual URL signing (no SDK) for reliable serverless compatibility
+
+import crypto from 'crypto';
 
 export default async function handler(req, res) {
     // Only allow GET requests
@@ -29,44 +32,29 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Dynamically import Cloudinary SDK (ES module)
-        const cloudinaryModule = await import('cloudinary');
-        const cloudinary = cloudinaryModule.default?.v2 || cloudinaryModule.v2;
-
-        // Configure Cloudinary with credentials
-        cloudinary.config({
-            cloud_name: CLOUD_NAME,
-            api_key: API_KEY,
-            api_secret: API_SECRET
-        });
-
-        // Parse transformation options into Cloudinary format
-        const transformations = options.split(',').map(opt => {
-            const trimmed = opt.trim();
-            // Convert shorthand to Cloudinary transformation objects
-            if (trimmed === 'f_auto') {
-                return { fetch_format: 'auto' };
-            } else if (trimmed === 'q_auto') {
-                return { quality: 'auto' };
-            } else if (trimmed === 'dpr_auto') {
-                return { dpr: 'auto' };
-            } else if (trimmed.startsWith('q_auto:')) {
-                // Handle q_auto:best format
-                const quality = trimmed.split(':')[1];
-                return { quality: quality || 'auto' };
-            } else {
-                // Return as-is for other transformations
-                return trimmed;
-            }
-        });
-
-        // Generate signed URL for authenticated/restricted image
-        const url = cloudinary.url(path, {
-            type: 'authenticated',
-            sign_url: true,
-            secure: true,
-            transformation: transformations
-        });
+        // Build transformation string from options
+        // Format: f_auto,q_auto,dpr_auto/ becomes f_auto,q_auto,dpr_auto/
+        const transformationStr = options ? `${options}/` : '';
+        
+        // Build the full resource path: transformations + image path
+        const resourcePath = `${transformationStr}${path}`;
+        
+        // Generate timestamp (Unix timestamp in seconds)
+        const timestamp = Math.round(Date.now() / 1000);
+        
+        // Build signature string for authenticated images
+        // Format: {resource_path}{timestamp}{api_secret}
+        const signatureString = `${resourcePath}${timestamp}${API_SECRET}`;
+        
+        // Generate SHA-1 signature
+        const signature = crypto
+            .createHash('sha1')
+            .update(signatureString)
+            .digest('hex');
+        
+        // Build the signed URL for authenticated images
+        // Format: https://res.cloudinary.com/{cloud_name}/image/authenticated/{transformations}/{path}?timestamp={timestamp}&signature={signature}
+        const url = `https://res.cloudinary.com/${CLOUD_NAME}/image/authenticated/${resourcePath}?timestamp=${timestamp}&signature=${signature}`;
 
         // Return signed URL (CDN-backed, cacheable)
         res.status(200).json({ url });

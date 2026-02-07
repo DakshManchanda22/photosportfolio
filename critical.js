@@ -342,15 +342,29 @@ async function loadPrivateImage(img) {
         
         if (data.url) {
             img.src = data.url;
+            
+            // Set timeout to prevent infinite loading
+            const timeout = setTimeout(() => {
+                if (img.dataset.loading) {
+                    console.error('Image load timeout:', img.dataset.path);
+                    delete img.dataset.loading;
+                    img.classList.remove("skeleton");
+                    // Keep skeleton visible but stop loading state
+                }
+            }, 30000); // 30 second timeout
+            
             img.onload = () => {
+                clearTimeout(timeout);
                 console.log('Image loaded successfully:', img.dataset.path);
                 img.classList.remove("skeleton");
                 delete img.dataset.loading;
                 scheduleLayout(); // Schedule masonry layout update
             };
             img.onerror = () => {
+                clearTimeout(timeout);
                 delete img.dataset.loading;
                 console.error('Failed to load image from URL:', data.url, 'Path:', img.dataset.path);
+                // Keep skeleton visible on error
             };
         } else {
             console.error('No URL in response:', data);
