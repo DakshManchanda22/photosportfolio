@@ -218,7 +218,7 @@ main > * {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url('assets/IMG_8677.jpg');
+    background-image: url('https://res.cloudinary.com/dakshscloud/image/upload/w_1400,q_auto,f_auto/IMG_8677.jpg');
     background-size: cover;
     background-position: center 68%;    
     background-repeat: no-repeat;

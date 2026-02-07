@@ -145,9 +145,13 @@ const nextBtn = document.querySelector('.next');
 let currentImageIndex = 0;
 let currentGalleryItems = []; // Array of image URLs
 
-// Load image for lightbox (uses local assets)
+// Load image for lightbox (uses Cloudinary with larger size)
 function loadLightboxImage(img) {
-    if (img.src) {
+    if (img.dataset.cloudinaryPath) {
+        // Use larger image for lightbox
+        lightboxImg.src = window.cloudinaryImgLarge(img.dataset.cloudinaryPath);
+    } else if (img.src) {
+        // Fallback: if src is already set, use it (shouldn't happen with new setup)
         lightboxImg.src = img.src;
     }
 }
@@ -162,7 +166,13 @@ document.addEventListener('click', async (e) => {
         if (activeSection) {
             // Collect all images for navigation
             const allImages = Array.from(activeSection.querySelectorAll('.gallery-item img'));
-            currentGalleryItems = allImages.map(imgEl => imgEl.src); // Store image URLs
+            // Store Cloudinary paths for larger images in lightbox
+            currentGalleryItems = allImages.map(imgEl => {
+                if (imgEl.dataset.cloudinaryPath) {
+                    return window.cloudinaryImgLarge(imgEl.dataset.cloudinaryPath);
+                }
+                return imgEl.src || '';
+            });
             currentImageIndex = allImages.indexOf(img);
             
             // Show lightbox immediately
@@ -350,7 +360,7 @@ function loadHeroImage() {
     if (heroSection) {
         // Hero background is loaded via CSS, but we can preload it
         const heroBg = new Image();
-        heroBg.src = 'assets/IMG_8677.jpg';
+        heroBg.src = window.cloudinaryImg('IMG_8677.jpg');
         heroBg.onload = () => {
             console.log('Hero image loaded');
         };
@@ -367,6 +377,11 @@ const imageObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const img = entry.target;
+            
+            // Set Cloudinary URL from data attribute if not already set
+            if (img.dataset.cloudinaryPath && !img.src) {
+                img.src = window.cloudinaryImg(img.dataset.cloudinaryPath);
+            }
             
             // Check if image is already loaded (cached)
             if (img.complete && img.naturalHeight !== 0) {
