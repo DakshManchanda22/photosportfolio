@@ -166,7 +166,13 @@ document.addEventListener('click', async (e) => {
         if (activeSection) {
             // Collect all images for navigation
             const allImages = Array.from(activeSection.querySelectorAll('.gallery-item img'));
-            currentGalleryItems = allImages.map(imgEl => imgEl.src); // Store image URLs
+            // Store Cloudinary paths for larger images in lightbox
+            currentGalleryItems = allImages.map(imgEl => {
+                if (imgEl.dataset.publicId && window.cloudinaryImgLarge) {
+                    return window.cloudinaryImgLarge(imgEl.dataset.publicId);
+                }
+                return imgEl.src || '';
+            });
             currentImageIndex = allImages.indexOf(img);
             
             // Show lightbox immediately
