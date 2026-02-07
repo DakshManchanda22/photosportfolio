@@ -291,33 +291,43 @@ const imageObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const img = entry.target;
-            // Image already has src attribute, just handle load event
-            if (img.src && !img.complete) {
-                img.onload = () => {
-                    img.classList.remove("skeleton");
-                    scheduleLayout(); // Schedule masonry layout update
-                };
-                img.onerror = () => {
-                    img.classList.remove("skeleton");
-                };
-            } else if (img.complete) {
-                // Image already loaded (cached)
+            
+            // Check if image is already loaded (cached)
+            if (img.complete && img.naturalHeight !== 0) {
+                // Image already loaded from cache - remove skeleton immediately
                 img.classList.remove("skeleton");
+                imageObserver.unobserve(img);
+                return;
             }
+            
+            // Image not loaded yet - set up load handlers
+            const handleLoad = () => {
+                img.classList.remove("skeleton");
+                scheduleLayout(); // Schedule masonry layout update
+            };
+            
+            const handleError = () => {
+                img.classList.remove("skeleton");
+            };
+            
+            // Check if already has load handler to avoid duplicates
+            if (!img.dataset.loadHandlerSet) {
+                img.onload = handleLoad;
+                img.onerror = handleError;
+                img.dataset.loadHandlerSet = 'true';
+            }
+            
             imageObserver.unobserve(img);
         }
     });
 }, { rootMargin: "200px" });
 
 images.forEach(img => {
-    // Handle images that are already loaded
+    // Check if image is already loaded (cached) - don't observe if already loaded
     if (img.complete && img.naturalHeight !== 0) {
         img.classList.remove("skeleton");
     } else {
-        img.onload = () => {
-            img.classList.remove("skeleton");
-            scheduleLayout();
-        };
+        // Only observe images that haven't loaded yet
         imageObserver.observe(img);
     }
 });

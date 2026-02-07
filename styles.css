@@ -329,6 +329,8 @@ main > * {
     column-count: 4;
     column-gap: 20px;
     margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
 }
 
 .gallery-item {
@@ -382,12 +384,11 @@ main > * {
     -o-user-drag: none;
 }
 
-/* Image aspect ratio and layout shift prevention */
+/* Images maintain their natural aspect ratio */
 .image {
     width: 100%;
     height: auto;
-    aspect-ratio: 2 / 3;
-    object-fit: cover;
+    display: block;
 }
 
 /* Skeleton loader - Pinterest style */
