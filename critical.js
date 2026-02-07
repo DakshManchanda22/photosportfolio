@@ -3,6 +3,9 @@
 // Loads immediately, no animations
 // ============================================
 
+// Import Cloudinary URL helper
+import { cdnImage } from './utils/cloudinary.js';
+
 // Initialize Lenis Smooth Scroll
 let lenis;
 if (typeof Lenis !== 'undefined') {
@@ -348,9 +351,26 @@ window.addEventListener('beforeunload', () => {
 function loadHeroImage() {
     const heroSection = document.querySelector('.hero-section');
     if (heroSection) {
-        // Hero background is loaded via CSS, but we can preload it
+        // Inject Cloudinary URL using centralized helper
+        const heroBgUrl = cdnImage('IMG_8677_xyrafx.jpg');
+        
+        // Apply background image to ::before pseudo-element via injected style
+        const styleId = 'hero-bg-style';
+        let style = document.getElementById(styleId);
+        if (!style) {
+            style = document.createElement('style');
+            style.id = styleId;
+            document.head.appendChild(style);
+        }
+        style.textContent = `
+            .hero-section::before {
+                background-image: url(${heroBgUrl});
+            }
+        `;
+        
+        // Preload hero image
         const heroBg = new Image();
-        heroBg.src = 'assets/IMG_8677.jpg';
+        heroBg.src = heroBgUrl;
         heroBg.onload = () => {
             console.log('Hero image loaded');
         };
@@ -394,8 +414,11 @@ const imageObserver = new IntersectionObserver(entries => {
                 return;
             }
             
-            // Load image from data-src
-            if (img.dataset.src && !img.src) {
+            // Load image from data-filename using centralized helper
+            if (img.dataset.filename && !img.src) {
+                img.src = cdnImage(img.dataset.filename);
+            } else if (img.dataset.src && !img.src) {
+                // Fallback for legacy data-src (if any remain)
                 img.src = img.dataset.src;
             }
             
