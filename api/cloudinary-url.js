@@ -1,10 +1,7 @@
 // Vercel Serverless Function to generate signed Cloudinary URLs
 // This keeps API secret secure on the server - NEVER exposed to frontend
 
-// Use CommonJS require for better Vercel compatibility
-const cloudinary = require('cloudinary').v2;
-
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
     // Only allow GET requests
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -16,15 +13,13 @@ module.exports = async function handler(req, res) {
     const API_SECRET = process.env.CLOUDINARY_API_SECRET;
 
     if (!CLOUD_NAME || !API_KEY || !API_SECRET) {
+        console.error('Missing Cloudinary credentials:', {
+            hasCloudName: !!CLOUD_NAME,
+            hasApiKey: !!API_KEY,
+            hasApiSecret: !!API_SECRET
+        });
         return res.status(500).json({ error: 'Cloudinary credentials not configured' });
     }
-
-    // Configure Cloudinary with credentials
-    cloudinary.config({
-        cloud_name: CLOUD_NAME,
-        api_key: API_KEY,
-        api_secret: API_SECRET
-    });
 
     // Get image path and transformation options from query
     const { path, options = 'f_auto,q_auto,dpr_auto' } = req.query;
@@ -34,6 +29,17 @@ module.exports = async function handler(req, res) {
     }
 
     try {
+        // Dynamically import Cloudinary SDK (ES module)
+        const cloudinaryModule = await import('cloudinary');
+        const cloudinary = cloudinaryModule.default?.v2 || cloudinaryModule.v2;
+
+        // Configure Cloudinary with credentials
+        cloudinary.config({
+            cloud_name: CLOUD_NAME,
+            api_key: API_KEY,
+            api_secret: API_SECRET
+        });
+
         // Parse transformation options into Cloudinary format
         const transformations = options.split(',').map(opt => {
             const trimmed = opt.trim();
@@ -44,6 +50,10 @@ module.exports = async function handler(req, res) {
                 return { quality: 'auto' };
             } else if (trimmed === 'dpr_auto') {
                 return { dpr: 'auto' };
+            } else if (trimmed.startsWith('q_auto:')) {
+                // Handle q_auto:best format
+                const quality = trimmed.split(':')[1];
+                return { quality: quality || 'auto' };
             } else {
                 // Return as-is for other transformations
                 return trimmed;
@@ -62,7 +72,11 @@ module.exports = async function handler(req, res) {
         res.status(200).json({ url });
     } catch (error) {
         console.error('Error generating Cloudinary signed URL:', error);
-        res.status(500).json({ error: 'Failed to generate signed URL' });
+        console.error('Error stack:', error.stack);
+        return res.status(500).json({ 
+            error: 'Failed to generate signed URL',
+            message: error.message 
+        });
     }
 }
 
