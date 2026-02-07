@@ -258,7 +258,11 @@ if (contactNav) {
         e.preventDefault();
         const contactSection = document.querySelector('.contact-section');
         if (contactSection) {
-            contactSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (lenis) {
+                lenis.scrollTo(contactSection, { offset: -100, duration: 1.5 });
+            } else {
+                contactSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
     });
 }
