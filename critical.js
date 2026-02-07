@@ -145,13 +145,9 @@ const nextBtn = document.querySelector('.next');
 let currentImageIndex = 0;
 let currentGalleryItems = []; // Array of image URLs
 
-// Load image for lightbox (uses Cloudinary with larger size)
+// Load image for lightbox (uses local assets)
 function loadLightboxImage(img) {
-    if (img.dataset.publicId && window.cloudinaryImgLarge) {
-        // Use larger image for lightbox
-        lightboxImg.src = window.cloudinaryImgLarge(img.dataset.publicId);
-    } else if (img.src) {
-        // Fallback: if src is already set, use it (shouldn't happen with new setup)
+    if (img.src) {
         lightboxImg.src = img.src;
     }
 }
@@ -166,13 +162,7 @@ document.addEventListener('click', async (e) => {
         if (activeSection) {
             // Collect all images for navigation
             const allImages = Array.from(activeSection.querySelectorAll('.gallery-item img'));
-            // Store Cloudinary paths for larger images in lightbox
-            currentGalleryItems = allImages.map(imgEl => {
-                if (imgEl.dataset.publicId && window.cloudinaryImgLarge) {
-                    return window.cloudinaryImgLarge(imgEl.dataset.publicId);
-                }
-                return imgEl.src || '';
-            });
+            currentGalleryItems = allImages.map(imgEl => imgEl.src); // Store image URLs
             currentImageIndex = allImages.indexOf(img);
             
             // Show lightbox immediately
@@ -350,37 +340,19 @@ window.addEventListener('beforeunload', () => {
 
 // ============================================
 // LAZY LOADING WITH INTERSECTION OBSERVER
-// Images load from local assets folder
-// Hero image loads first, then gallery images
+// Pinterest-style masonry grid with aspect-ratio containers
+// No layout shift - space reserved before images load
 // ============================================
 
 // Priority 1: Load hero background image immediately
 function loadHeroImage() {
     const heroSection = document.querySelector('.hero-section');
-    if (heroSection && window.cloudinaryImg) {
-        // Generate Cloudinary URL for hero background
-        const heroPublicId = 'IMG_8677.jpg';
-        const heroUrl = window.cloudinaryImg(heroPublicId, 1920);
-        
-        // Inject background image via style
-        const styleId = 'hero-bg-style';
-        let style = document.getElementById(styleId);
-        if (!style) {
-            style = document.createElement('style');
-            style.id = styleId;
-            document.head.appendChild(style);
-        }
-        style.textContent = `
-            .hero-section::before {
-                background-image: url(${heroUrl});
-            }
-        `;
-        
-        // Preload hero image
+    if (heroSection) {
+        // Hero background is loaded via CSS, but we can preload it
         const heroBg = new Image();
-        heroBg.src = heroUrl;
+        heroBg.src = 'assets/IMG_8677.jpg';
         heroBg.onload = () => {
-            console.log('Hero image loaded from Cloudinary');
+            console.log('Hero image loaded');
         };
     }
 }
@@ -388,35 +360,56 @@ function loadHeroImage() {
 // Load hero image first
 loadHeroImage();
 
-// Priority 2: Load gallery images with lazy loading
+// Priority 2: Load gallery images with lazy loading and orientation detection
 const images = document.querySelectorAll("img.lazy");
+
+// Function to detect and set image orientation
+function detectAndSetOrientation(img, pin) {
+    if (img.complete && img.naturalWidth && img.naturalHeight) {
+        const isHorizontal = img.naturalWidth > img.naturalHeight;
+        pin.setAttribute('data-orientation', isHorizontal ? 'horizontal' : 'vertical');
+    } else {
+        // If image not loaded yet, set default and update when loaded
+        img.onload = function() {
+            const isHorizontal = img.naturalWidth > img.naturalHeight;
+            pin.setAttribute('data-orientation', isHorizontal ? 'horizontal' : 'vertical');
+        };
+    }
+}
 
 const imageObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const img = entry.target;
-            
-            // Generate Cloudinary URL from public ID if available
-            if (img.dataset.publicId && window.cloudinaryImg && !img.src) {
-                img.src = window.cloudinaryImg(img.dataset.publicId);
-            }
+            const pin = img.closest('.pin');
             
             // Check if image is already loaded (cached)
             if (img.complete && img.naturalHeight !== 0) {
-                // Image already loaded from cache - remove skeleton immediately
-                img.classList.remove("skeleton");
+                // Image already loaded from cache - fade in immediately
+                img.classList.add('loaded');
+                if (pin) {
+                    detectAndSetOrientation(img, pin);
+                }
                 imageObserver.unobserve(img);
                 return;
             }
             
-            // Image not loaded yet - set up load handlers
+            // Load image from data-src
+            if (img.dataset.src && !img.src) {
+                img.src = img.dataset.src;
+            }
+            
+            // Set up load handler for fade-in transition
             const handleLoad = () => {
-                img.classList.remove("skeleton");
-                scheduleLayout(); // Schedule masonry layout update
+                img.classList.add('loaded');
+                if (pin) {
+                    detectAndSetOrientation(img, pin);
+                }
             };
             
             const handleError = () => {
-                img.classList.remove("skeleton");
+                // On error, still show the container (no image)
+                img.classList.add('loaded');
             };
             
             // Check if already has load handler to avoid duplicates
@@ -431,40 +424,23 @@ const imageObserver = new IntersectionObserver(entries => {
     });
 }, { rootMargin: "200px" });
 
-// Delay gallery image observation slightly to prioritize hero
-setTimeout(() => {
-    images.forEach(img => {
-        // Check if image is already loaded (cached) - don't observe if already loaded
-        if (img.complete && img.naturalHeight !== 0) {
-            img.classList.remove("skeleton");
-        } else {
-            // Only observe images that haven't loaded yet
-            imageObserver.observe(img);
+// Start observing all lazy images
+images.forEach(img => {
+    // Check if image is already loaded (cached)
+    if (img.complete && img.naturalHeight !== 0) {
+        img.classList.add('loaded');
+        const pin = img.closest('.pin');
+        if (pin) {
+            detectAndSetOrientation(img, pin);
         }
-    });
-}, 100); // Small delay to let hero load first
-
-// ============================================
-// MASONRY LAYOUT BATCHING
-// ============================================
-let layoutScheduled = false;
-
-function scheduleLayout() {
-    if (!layoutScheduled) {
-        layoutScheduled = true;
-        requestAnimationFrame(() => {
-            // Masonry layout is handled by CSS columns, but we can trigger reflow if needed
-            const galleryGrid = document.querySelector('.gallery-grid');
-            if (galleryGrid) {
-                // Force reflow to ensure proper layout
-                galleryGrid.style.display = 'none';
-                galleryGrid.offsetHeight; // Trigger reflow
-                galleryGrid.style.display = '';
-            }
-            layoutScheduled = false;
-        });
+    } else {
+        // Observe images that haven't loaded yet
+        imageObserver.observe(img);
     }
-}
+});
+
+// Note: Masonry layout is now handled by CSS Grid with aspect-ratio containers
+// No layout recalculation needed - space is reserved before images load
 
 // ============================================
 // YOUTUBE VIDEOS LOADING
