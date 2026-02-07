@@ -147,9 +147,9 @@ let currentGalleryItems = []; // Array of image URLs
 
 // Load image for lightbox (uses Cloudinary with larger size)
 function loadLightboxImage(img) {
-    if (img.dataset.cloudinaryPath) {
+    if (img.dataset.publicId && window.cloudinaryImgLarge) {
         // Use larger image for lightbox
-        lightboxImg.src = window.cloudinaryImgLarge(img.dataset.cloudinaryPath);
+        lightboxImg.src = window.cloudinaryImgLarge(img.dataset.publicId);
     } else if (img.src) {
         // Fallback: if src is already set, use it (shouldn't happen with new setup)
         lightboxImg.src = img.src;
@@ -166,13 +166,7 @@ document.addEventListener('click', async (e) => {
         if (activeSection) {
             // Collect all images for navigation
             const allImages = Array.from(activeSection.querySelectorAll('.gallery-item img'));
-            // Store Cloudinary paths for larger images in lightbox
-            currentGalleryItems = allImages.map(imgEl => {
-                if (imgEl.dataset.cloudinaryPath) {
-                    return window.cloudinaryImgLarge(imgEl.dataset.cloudinaryPath);
-                }
-                return imgEl.src || '';
-            });
+            currentGalleryItems = allImages.map(imgEl => imgEl.src); // Store image URLs
             currentImageIndex = allImages.indexOf(img);
             
             // Show lightbox immediately
@@ -357,12 +351,30 @@ window.addEventListener('beforeunload', () => {
 // Priority 1: Load hero background image immediately
 function loadHeroImage() {
     const heroSection = document.querySelector('.hero-section');
-    if (heroSection) {
-        // Hero background is loaded via CSS, but we can preload it
+    if (heroSection && window.cloudinaryImg) {
+        // Generate Cloudinary URL for hero background
+        const heroPublicId = 'IMG_8677.jpg';
+        const heroUrl = window.cloudinaryImg(heroPublicId, 1920);
+        
+        // Inject background image via style
+        const styleId = 'hero-bg-style';
+        let style = document.getElementById(styleId);
+        if (!style) {
+            style = document.createElement('style');
+            style.id = styleId;
+            document.head.appendChild(style);
+        }
+        style.textContent = `
+            .hero-section::before {
+                background-image: url(${heroUrl});
+            }
+        `;
+        
+        // Preload hero image
         const heroBg = new Image();
-        heroBg.src = window.cloudinaryImg('IMG_8677.jpg');
+        heroBg.src = heroUrl;
         heroBg.onload = () => {
-            console.log('Hero image loaded');
+            console.log('Hero image loaded from Cloudinary');
         };
     }
 }
@@ -378,9 +390,9 @@ const imageObserver = new IntersectionObserver(entries => {
         if (entry.isIntersecting) {
             const img = entry.target;
             
-            // Set Cloudinary URL from data attribute if not already set
-            if (img.dataset.cloudinaryPath && !img.src) {
-                img.src = window.cloudinaryImg(img.dataset.cloudinaryPath);
+            // Generate Cloudinary URL from public ID if available
+            if (img.dataset.publicId && window.cloudinaryImg && !img.src) {
+                img.src = window.cloudinaryImg(img.dataset.publicId);
             }
             
             // Check if image is already loaded (cached)
