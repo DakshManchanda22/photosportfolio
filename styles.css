@@ -331,12 +331,11 @@ main > * {
 /* CSS Grid Masonry Layout - Pinterest Style */
 .gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 16px;
     margin: 0 auto;
     width: 100%;
     max-width: 100%;
-    grid-auto-rows: 10px; /* Small row height for masonry effect */
 }
 
 .gallery-item {
@@ -361,17 +360,19 @@ main > * {
 }
 
 /* Vertical images: 3/4 aspect ratio */
+.pin.vertical,
 .pin[data-orientation="vertical"] {
     aspect-ratio: 3 / 4;
 }
 
 /* Horizontal images: 4/3 aspect ratio */
+.pin.horizontal,
 .pin[data-orientation="horizontal"] {
     aspect-ratio: 4 / 3;
 }
 
 /* Default to vertical if orientation not specified */
-.pin:not([data-orientation]) {
+.pin:not([data-orientation]):not(.vertical):not(.horizontal) {
     aspect-ratio: 3 / 4;
 }
 
