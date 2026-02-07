@@ -1,10 +1,10 @@
 // Vercel Serverless Function to generate signed Cloudinary URLs
 // This keeps API secret secure on the server - NEVER exposed to frontend
-// Uses manual URL signing (no SDK dependency) for better serverless compatibility
 
-import crypto from 'crypto';
+// Use CommonJS require for better Vercel compatibility
+const cloudinary = require('cloudinary').v2;
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // Only allow GET requests
     if (req.method !== 'GET') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -19,6 +19,13 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Cloudinary credentials not configured' });
     }
 
+    // Configure Cloudinary with credentials
+    cloudinary.config({
+        cloud_name: CLOUD_NAME,
+        api_key: API_KEY,
+        api_secret: API_SECRET
+    });
+
     // Get image path and transformation options from query
     const { path, options = 'f_auto,q_auto,dpr_auto' } = req.query;
 
@@ -27,33 +34,29 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Parse transformation options
-        const transformations = options.split(',').map(opt => opt.trim());
-        
-        // Build transformation string for URL
-        const transformationStr = transformations.length > 0 
-            ? transformations.join(',') + '/' 
-            : '';
-        
-        // Build the full resource path
-        const resourcePath = `${transformationStr}${path}`;
-        
-        // Generate timestamp (Unix timestamp in seconds)
-        const timestamp = Math.round(Date.now() / 1000);
-        
-        // Build signature string: transformations + path + timestamp + secret
-        // Note: For authenticated images, the signature includes the full path
-        const signatureString = `${resourcePath}${timestamp}${API_SECRET}`;
-        
-        // Generate SHA-1 signature
-        const signature = crypto
-            .createHash('sha1')
-            .update(signatureString)
-            .digest('hex');
-        
-        // Build the signed URL for authenticated images
-        // Format: https://res.cloudinary.com/{cloud_name}/image/authenticated/{transformations}/{path}?timestamp={timestamp}&signature={signature}
-        const url = `https://res.cloudinary.com/${CLOUD_NAME}/image/authenticated/${resourcePath}?timestamp=${timestamp}&signature=${signature}`;
+        // Parse transformation options into Cloudinary format
+        const transformations = options.split(',').map(opt => {
+            const trimmed = opt.trim();
+            // Convert shorthand to Cloudinary transformation objects
+            if (trimmed === 'f_auto') {
+                return { fetch_format: 'auto' };
+            } else if (trimmed === 'q_auto') {
+                return { quality: 'auto' };
+            } else if (trimmed === 'dpr_auto') {
+                return { dpr: 'auto' };
+            } else {
+                // Return as-is for other transformations
+                return trimmed;
+            }
+        });
+
+        // Generate signed URL for authenticated/restricted image
+        const url = cloudinary.url(path, {
+            type: 'authenticated',
+            sign_url: true,
+            secure: true,
+            transformation: transformations
+        });
 
         // Return signed URL (CDN-backed, cacheable)
         res.status(200).json({ url });
