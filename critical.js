@@ -96,38 +96,11 @@ const prevBtn = document.querySelector('.prev');
 const nextBtn = document.querySelector('.next');
 
 let currentImageIndex = 0;
-let currentGalleryItems = []; // Array of image elements
+let currentGalleryItems = []; // Array of image URLs
 
-// Load full-quality signed URL for lightbox
-// Frontend only consumes URLs from backend - no Cloudinary logic here
-async function loadLightboxImage(img) {
-    if (!img.dataset.path) {
-        // Fallback to current src if no path
-        lightboxImg.src = img.src;
-        return;
-    }
-
-    try {
-        // Fetch signed URL from backend (backend handles all Cloudinary logic)
-        const res = await fetch(
-            `/api/cloudinary-url?path=${encodeURIComponent(img.dataset.path)}`
-        );
-        
-        if (!res.ok) {
-            throw new Error(`Failed to fetch lightbox image: ${res.status}`);
-        }
-
-        const data = await res.json();
-        if (data.url) {
-            // Use URL directly from backend - no modification
-            lightboxImg.src = data.url;
-        } else {
-            // Fallback to current src
-            lightboxImg.src = img.src;
-        }
-    } catch (error) {
-        console.error('Error loading lightbox image:', error);
-        // Fallback to current src
+// Load image for lightbox (uses local assets)
+function loadLightboxImage(img) {
+    if (img.src) {
         lightboxImg.src = img.src;
     }
 }
@@ -140,17 +113,17 @@ document.addEventListener('click', async (e) => {
         const activeSection = document.querySelector('.gallery-section.active');
         
         if (activeSection) {
-            // Collect all images with their paths for navigation
+            // Collect all images for navigation
             const allImages = Array.from(activeSection.querySelectorAll('.gallery-item img'));
-            currentGalleryItems = allImages; // Store image elements, not URLs
+            currentGalleryItems = allImages.map(imgEl => imgEl.src); // Store image URLs
             currentImageIndex = allImages.indexOf(img);
             
             // Show lightbox immediately
             lightbox.style.display = 'block';
             document.body.style.overflow = 'hidden';
             
-            // Load full-quality image (backend handles quality settings)
-            await loadLightboxImage(img);
+            // Load image
+            loadLightboxImage(img);
         }
     }
 });
@@ -170,15 +143,15 @@ lightbox.addEventListener('click', (e) => {
 });
 
 // Previous image
-prevBtn.addEventListener('click', async () => {
+prevBtn.addEventListener('click', () => {
     currentImageIndex = (currentImageIndex - 1 + currentGalleryItems.length) % currentGalleryItems.length;
-    await loadLightboxImage(currentGalleryItems[currentImageIndex]);
+    lightboxImg.src = currentGalleryItems[currentImageIndex];
 });
 
 // Next image
-nextBtn.addEventListener('click', async () => {
+nextBtn.addEventListener('click', () => {
     currentImageIndex = (currentImageIndex + 1) % currentGalleryItems.length;
-    await loadLightboxImage(currentGalleryItems[currentImageIndex]);
+    lightboxImg.src = currentGalleryItems[currentImageIndex];
 });
 
 // Keyboard navigation
@@ -310,83 +283,44 @@ window.addEventListener('beforeunload', () => {
 
 // ============================================
 // LAZY LOADING WITH INTERSECTION OBSERVER
-// Fetches signed URLs from server for private images
+// Images load from local assets folder
 // ============================================
 const images = document.querySelectorAll("img.lazy");
-
-// Load private image by fetching signed URL from server
-async function loadPrivateImage(img) {
-    if (!img.dataset.path || img.dataset.loading) {
-        return; // No path or already loading
-    }
-
-    img.dataset.loading = 'true'; // Prevent duplicate requests
-
-    try {
-        // Fetch signed URL from backend (backend handles all Cloudinary logic and transformations)
-        const apiUrl = `/api/cloudinary-url?path=${encodeURIComponent(img.dataset.path)}`;
-        console.log('Fetching signed URL for:', img.dataset.path);
-        
-        const res = await fetch(apiUrl);
-        
-        if (!res.ok) {
-            const errorText = await res.text();
-            console.error('API error response:', res.status, errorText);
-            throw new Error(`Failed to fetch signed URL: ${res.status} - ${errorText}`);
-        }
-
-        const data = await res.json();
-        console.log('Received URL for:', img.dataset.path, data.url ? '✓' : '✗');
-        
-        if (data.url) {
-            img.src = data.url;
-            
-            // Set timeout to prevent infinite loading
-            const timeout = setTimeout(() => {
-                if (img.dataset.loading) {
-                    console.error('Image load timeout:', img.dataset.path);
-                    delete img.dataset.loading;
-                    img.classList.remove("skeleton");
-                    // Keep skeleton visible but stop loading state
-                }
-            }, 30000); // 30 second timeout
-            
-            img.onload = () => {
-                clearTimeout(timeout);
-                console.log('Image loaded successfully:', img.dataset.path);
-                img.classList.remove("skeleton");
-                delete img.dataset.loading;
-                scheduleLayout(); // Schedule masonry layout update
-            };
-            img.onerror = () => {
-                clearTimeout(timeout);
-                delete img.dataset.loading;
-                console.error('Failed to load image from URL:', data.url, 'Path:', img.dataset.path);
-                // Keep skeleton visible on error
-            };
-        } else {
-            console.error('No URL in response:', data);
-            throw new Error('No URL in response');
-        }
-    } catch (error) {
-        console.error('Error loading private image:', img.dataset.path, error);
-        delete img.dataset.loading;
-    }
-}
 
 const imageObserver = new IntersectionObserver(entries => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             const img = entry.target;
-            if (img.dataset.path) {
-                loadPrivateImage(img);
-                imageObserver.unobserve(img);
+            // Image already has src attribute, just handle load event
+            if (img.src && !img.complete) {
+                img.onload = () => {
+                    img.classList.remove("skeleton");
+                    scheduleLayout(); // Schedule masonry layout update
+                };
+                img.onerror = () => {
+                    img.classList.remove("skeleton");
+                };
+            } else if (img.complete) {
+                // Image already loaded (cached)
+                img.classList.remove("skeleton");
             }
+            imageObserver.unobserve(img);
         }
     });
 }, { rootMargin: "200px" });
 
-images.forEach(img => imageObserver.observe(img));
+images.forEach(img => {
+    // Handle images that are already loaded
+    if (img.complete && img.naturalHeight !== 0) {
+        img.classList.remove("skeleton");
+    } else {
+        img.onload = () => {
+            img.classList.remove("skeleton");
+            scheduleLayout();
+        };
+        imageObserver.observe(img);
+    }
+});
 
 // ============================================
 // MASONRY LAYOUT BATCHING
@@ -510,48 +444,8 @@ async function loadYouTubeVideos() {
     }
 }
 
-// Load hero background image with signed URL
-async function loadHeroBackground() {
-    const heroSection = document.querySelector('.hero-section');
-    if (!heroSection || !heroSection.dataset.heroBg) {
-        return;
-    }
-
-    try {
-        const path = heroSection.dataset.heroBg;
-        // Fetch signed URL from backend (backend handles all Cloudinary logic)
-        const res = await fetch(
-            `/api/cloudinary-url?path=${encodeURIComponent(path)}`
-        );
-        
-        if (!res.ok) {
-            throw new Error(`Failed to fetch hero background: ${res.status}`);
-        }
-
-        const data = await res.json();
-        if (data.url) {
-            // Apply background image to ::before pseudo-element via injected style
-            const styleId = 'hero-bg-style';
-            let style = document.getElementById(styleId);
-            if (!style) {
-                style = document.createElement('style');
-                style.id = styleId;
-                document.head.appendChild(style);
-            }
-            style.textContent = `
-                .hero-section::before {
-                    background-image: url(${data.url});
-                }
-            `;
-        }
-    } catch (error) {
-        console.error('Error loading hero background:', error);
-    }
-}
-
 // Load videos when page loads
 window.addEventListener('load', () => {
     loadYouTubeVideos();
-    loadHeroBackground(); // Load hero background immediately
 });
 

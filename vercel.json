@@ -3,10 +3,6 @@
     "api/youtube.js": {
       "memory": 1024,
       "maxDuration": 10
-    },
-    "api/cloudinary-url.js": {
-      "memory": 1024,
-      "maxDuration": 10
     }
   }
 }
