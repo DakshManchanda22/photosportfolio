@@ -326,32 +326,38 @@ async function loadPrivateImage(img) {
 
     try {
         // Fetch signed URL from serverless function
-        const res = await fetch(
-            `/api/cloudinary-url?path=${encodeURIComponent(img.dataset.path)}&options=f_auto,q_auto,dpr_auto`
-        );
+        const apiUrl = `/api/cloudinary-url?path=${encodeURIComponent(img.dataset.path)}&options=f_auto,q_auto,dpr_auto`;
+        console.log('Fetching signed URL for:', img.dataset.path);
+        
+        const res = await fetch(apiUrl);
         
         if (!res.ok) {
-            throw new Error(`Failed to fetch signed URL: ${res.status}`);
+            const errorText = await res.text();
+            console.error('API error response:', res.status, errorText);
+            throw new Error(`Failed to fetch signed URL: ${res.status} - ${errorText}`);
         }
 
         const data = await res.json();
+        console.log('Received URL for:', img.dataset.path, data.url ? '✓' : '✗');
         
         if (data.url) {
             img.src = data.url;
             img.onload = () => {
+                console.log('Image loaded successfully:', img.dataset.path);
                 img.classList.remove("skeleton");
                 delete img.dataset.loading;
                 scheduleLayout(); // Schedule masonry layout update
             };
             img.onerror = () => {
                 delete img.dataset.loading;
-                console.error('Failed to load image:', img.dataset.path);
+                console.error('Failed to load image from URL:', data.url, 'Path:', img.dataset.path);
             };
         } else {
+            console.error('No URL in response:', data);
             throw new Error('No URL in response');
         }
     } catch (error) {
-        console.error('Error loading private image:', error);
+        console.error('Error loading private image:', img.dataset.path, error);
         delete img.dataset.loading;
     }
 }
