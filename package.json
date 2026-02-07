@@ -5,9 +5,7 @@
   "scripts": {
     "dev": "vercel dev"
   },
-  "dependencies": {
-    "cloudinary": "^1.41.0"
-  },
+  "dependencies": {},
   "devDependencies": {},
   "engines": {
     "node": "24.x"
