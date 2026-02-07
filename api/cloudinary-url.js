@@ -2,8 +2,6 @@
 // This keeps API secret secure on the server - NEVER exposed to frontend
 // Uses official Cloudinary SDK for authenticated image delivery
 
-import cloudinary from 'cloudinary';
-
 export default async function handler(req, res) {
     // Only allow GET requests
     if (req.method !== 'GET') {
@@ -32,6 +30,10 @@ export default async function handler(req, res) {
     }
 
     try {
+        // Dynamically import Cloudinary SDK (works better in Vercel serverless)
+        const cloudinaryModule = await import('cloudinary');
+        const cloudinary = cloudinaryModule.default || cloudinaryModule;
+        
         // Configure Cloudinary (server-side only)
         cloudinary.v2.config({
             cloud_name: CLOUD_NAME,
